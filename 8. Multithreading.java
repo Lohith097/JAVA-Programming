@@ -1,94 +1,98 @@
-import java.util.Scanner;
-
 class TicketBooking {
     String passengerName;
     String bookingStatus;
 
-    public TicketBooking(String passengerName) {
+    TicketBooking(String passengerName) {
         this.passengerName = passengerName;
-        this.bookingStatus = "Pending";
+        this.bookingStatus = (passengerName == null || passengerName.trim().isEmpty()) ? "Failed (Invalid)" : "Confirmed";
     }
 
-    public void processBooking() {
-        if (passengerName == null || passengerName.trim().isEmpty()) {
-            bookingStatus = "Failed (Invalid Name)";
-        } else {
-            bookingStatus = "Confirmed";
-        }
+    void displayBookingDetails() {
         System.out.println("Passenger: " + passengerName +
                            " | Status: " + bookingStatus +
-                           " | Thread: " + Thread.currentThread().getName());
+                           " | Thread Name: " + Thread.currentThread().getName() +
+                           " | Thread ID: " + Thread.currentThread().getId());
     }
 }
 
 class BookingThread extends Thread {
     TicketBooking booking;
 
-    public BookingThread(TicketBooking booking, String threadName) {
-        super(threadName);
+    BookingThread(TicketBooking booking) {
         this.booking = booking;
     }
 
     @Override
     public void run() {
-        try { Thread.sleep(100); } catch (InterruptedException e) {}
-        booking.processBooking();
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            System.out.println("Thread interrupted.");
+        }
+        booking.displayBookingDetails();
     }
 }
 
 class BookingRunnable implements Runnable {
     TicketBooking booking;
 
-    public BookingRunnable(TicketBooking booking) {
+    BookingRunnable(TicketBooking booking) {
         this.booking = booking;
     }
 
     @Override
     public void run() {
-        try { Thread.sleep(100); } catch (InterruptedException e) {}
-        booking.processBooking();
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            System.out.println("Thread interrupted.");
+        }
+        booking.displayBookingDetails();
     }
 }
 
 public class RailwayReservation {
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-       
-        System.out.print("Enter total number of booking requests: ");
-        int n = sc.nextInt();
-        sc.nextLine(); 
+        TicketBooking tb1 = new TicketBooking("Rahul");
+        TicketBooking tb2 = new TicketBooking("Priya");
+        TicketBooking tb3 = new TicketBooking("Aman");
+        TicketBooking tb4 = new TicketBooking("Neha");
+        
+        TicketBooking tb5 = new TicketBooking(""); 
 
-        Thread[] threads = new Thread[n];
+        BookingThread t1 = new BookingThread(tb1);
+        t1.setName(tb1.passengerName + "-Thread");
 
-        for (int i = 0; i < n; i++) {
-            System.out.print("Enter Passenger " + (i + 1) + " Name (Type 'null' or leave empty for invalid tests): ");
-            String name = sc.nextLine();
-            if (name.equalsIgnoreCase("null")) name = null;
+        BookingThread t2 = new BookingThread(tb2);
+        t2.setName(tb2.passengerName + "-Thread");
 
-            TicketBooking tb = new TicketBooking(name);
+        Thread t3 = new Thread(new BookingRunnable(tb3));
+        t3.setName(tb3.passengerName + "-Runnable");
 
-            if (i % 2 == 0) {
-                threads[i] = new BookingThread(tb, "Thread-Class-" + i);
-            } else {
-                threads[i] = new Thread(new BookingRunnable(tb), "Runnable-Interface-" + i);
-            }
-        }
+        Thread t4 = new Thread(new BookingRunnable(tb4));
+        t4.setName(tb4.passengerName + "-Runnable");
+        
+        Thread t5 = new Thread(new BookingRunnable(tb5));
+        t5.setName("Unknown-Runnable");
 
         System.out.println("\n--- Concurrent Booking Process Started ---");
-       
-        for (Thread t : threads) {
-            t.start();
+
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
+        t5.start();
+
+        try {
+            t1.join();
+            t2.join();
+            t3.join();
+            t4.join();
+            t5.join();
+        } catch (InterruptedException e) {
+            System.out.println("Main thread interrupted.");
         }
 
-        for (Thread t : threads) {
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                System.out.println(t.getName() + " was interrupted.");
-            }
-        }
-
-        System.out.println("All passenger booking requests have been processed successfully.");
-        sc.close();
+        System.out.println("\nAll passenger booking requests have been processed successfully.");
     }
 }
